@@ -16,7 +16,7 @@ services:
       context: .
       dockerfile: jenkins-agent.Dockerfile
     environment:
-      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_URL=http://jenkins-1:8080
       - JENKINS_AGENT_NAME=agent-1
       - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
       - JENKINS_SECRET=${JENKINS_SECRET}   # to be read from the .env file
