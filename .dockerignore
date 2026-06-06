@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+.venv
+venv
+jenkins_docker
+pipelines
+*.md
+.env
+.env.*
