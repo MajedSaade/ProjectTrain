@@ -24,6 +24,8 @@ services:
       - JENKINS_SECRET=${JENKINS_SECRET}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Same path on host + agent so nested `docker run -v $PWD` works if needed.
+      - /home/jenkins/agent:/home/jenkins/agent
     group_add:
       - ${DOCKER_GROUP_ID}
     networks:

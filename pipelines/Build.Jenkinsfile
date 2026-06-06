@@ -21,13 +21,9 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh '''
-                    docker run --rm \
-                        -v "$PWD:/workspace" \
-                        -w /workspace \
-                        python:3.11-slim \
-                        sh -c "pip install --quiet -r requirements.txt && PYTHONPATH=. pytest"
-                '''
+                // Agent uses host Docker via socket; -v $PWD mounts a host path,
+                // not the agent container path. Build context is streamed over the API instead.
+                sh 'docker build --target builder -t xo-game-test .'
             }
         }
 
