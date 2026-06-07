@@ -118,6 +118,8 @@ pipeline {
                 docker logout "$DOCKER_REGISTRY_HOST" 2>/dev/null || true
                 docker image prune -f --filter "dangling=true" || true
             '''
+        }
+        cleanup {
             cleanWs()
         }
     }
