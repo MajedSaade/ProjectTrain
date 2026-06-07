@@ -1,10 +1,35 @@
+def sendBuildEmail(String status) {
+    withCredentials([
+        string(credentialsId: 'EmailToSend', variable: 'NOTIFY_TO'),
+        usernamePassword(
+            credentialsId: 'smtp-credentials',
+            usernameVariable: 'SMTP_USER',
+            passwordVariable: 'SMTP_PASSWORD'
+        )
+    ]) {
+        sh """
+            docker run --rm -i \\
+                -e NOTIFY_TO \\
+                -e SMTP_USER \\
+                -e SMTP_PASSWORD \\
+                -e SMTP_HOST=\${SMTP_HOST} \\
+                -e SMTP_PORT=\${SMTP_PORT} \\
+                -e BUILD_STATUS=${status} \\
+                -e JOB_NAME=\${JOB_NAME} \\
+                -e BUILD_NUMBER=\${BUILD_NUMBER} \\
+                -e BUILD_URL=\${BUILD_URL} \\
+                -e DOCKER_IMAGE_NAME=\${DOCKER_IMAGE_NAME} \\
+                python:3.11-slim python - < notify.py
+        """
+    }
+}
+
 pipeline {
     agent {
         label 'general'
     }
 
     environment {
-        // Update these for your registry (or override in the Jenkins job UI).
         DOCKER_REGISTRY_HOST = 'docker.io'
         DOCKER_IMAGE_NAME = 'majedsaade/xo-game'
         DOCKER_CREDENTIALS_ID = 'dockerhub-registry-Credentials'
@@ -12,6 +37,9 @@ pipeline {
         CONTAINER_NAME = 'xo-game'
         HOST_PORT = '5000'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+
+        SMTP_HOST = 'smtp.gmail.com'
+        SMTP_PORT = '587'
     }
 
     triggers {
@@ -21,8 +49,6 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                // Agent uses host Docker via socket; -v $PWD mounts a host path,
-                // not the agent container path. Build context is streamed over the API instead.
                 sh 'docker build --target builder -t xo-game-test .'
             }
         }
@@ -77,6 +103,16 @@ pipeline {
     }
 
     post {
+        success {
+            script {
+                sendBuildEmail('SUCCESS')
+            }
+        }
+        failure {
+            script {
+                sendBuildEmail('FAILURE')
+            }
+        }
         always {
             sh '''
                 docker logout "$DOCKER_REGISTRY_HOST" 2>/dev/null || true
