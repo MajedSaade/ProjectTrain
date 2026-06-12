@@ -11,7 +11,10 @@ COPY tests/ ./tests/
 ENV PATH="/install/bin:${PATH}" \
     PYTHONPATH="/build:/install/lib/python3.11/site-packages"
 
-RUN pytest
+RUN mkdir -p reports && pytest \
+    --junitxml=reports/junit-report.xml \
+    --cov=app \
+    --cov-report=html:reports/coverage-html/
 
 
 FROM python:3.11-slim AS runtime

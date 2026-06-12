@@ -49,7 +49,29 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh 'docker build --target builder -t xo-game-test .'
+                sh '''
+                    mkdir -p reports
+                    docker build --target builder -t xo-game-test .
+                    cid=$(docker create xo-game-test)
+                    docker cp "$cid:/build/reports/." reports/
+                    docker rm "$cid"
+                '''
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh '''
+                    mkdir -p reports
+                    docker build -t xo-game-scan .
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v "$PWD/reports:/reports" \
+                        aquasec/trivy:latest image \
+                        --format table \
+                        --output /reports/trivy-report.txt \
+                        xo-game-scan
+                '''
             }
         }
 
@@ -114,6 +136,8 @@ pipeline {
             }
         }
         always {
+            junit testResults: 'reports/junit-report.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
             sh '''
                 docker logout "$DOCKER_REGISTRY_HOST" 2>/dev/null || true
                 docker image prune -f --filter "dangling=true" || true
